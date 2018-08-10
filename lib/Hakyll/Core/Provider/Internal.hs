@@ -20,6 +20,7 @@ module Hakyll.Core.Provider.Internal
 
 
 --------------------------------------------------------------------------------
+import           Control.Applicative
 import           Control.DeepSeq        (NFData (..), deepseq)
 import           Control.Monad          (forM)
 import           Data.Binary            (Binary (..))
@@ -29,10 +30,11 @@ import qualified Data.Map               as M
 import           Data.Maybe             (fromMaybe)
 import           Data.Set               (Set)
 import qualified Data.Set               as S
-import           Data.Time              (Day (..), UTCTime (..))
+import           Data.Time              (Day (..), UTCTime (..), defaultTimeLocale, parseTimeM, iso8601DateFormat)
 import           Data.Typeable          (Typeable)
 import           System.Directory       (getModificationTime)
 import           System.FilePath        (addExtension, (</>))
+import           System.Process
 
 
 --------------------------------------------------------------------------------
@@ -129,7 +131,14 @@ newProvider store ignore directory = do
 --------------------------------------------------------------------------------
 getResourceInfo :: FilePath -> Set Identifier -> Identifier -> IO ResourceInfo
 getResourceInfo directory universe identifier = do
-    mtime <- fileModificationTime $ directory </> toFilePath identifier
+    (_, gitTime, _) <-
+        readCreateProcessWithExitCode
+        (proc "git" ["log", "-n1", "--format=%aI", toFilePath identifier])
+        {cwd = Just directory} ""
+    mtime <-
+        (parseTimeM True
+         defaultTimeLocale (iso8601DateFormat (Just "%T%Z")) gitTime)
+        <|> (fileModificationTime $ directory </> toFilePath identifier)
     return $ ResourceInfo (BinaryTime mtime) $
         if mdRsc `S.member` universe then Just mdRsc else Nothing
   where
