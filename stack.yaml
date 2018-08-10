@@ -1,4 +1,4 @@
-resolver: lts-11.7
+resolver: lts-11.20
 extra-package-dbs: []
 save-hackage-creds: false
 
@@ -24,6 +24,7 @@ build:
   haddock-deps: false
 
 extra-deps:
+- 'haddock-library-1.5.0.1'
 - 'pandoc-2.2'
 - 'pandoc-types-1.17.4.2'
 - 'pandoc-citeproc-0.14.3.1'
